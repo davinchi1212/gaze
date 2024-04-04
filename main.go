@@ -28,7 +28,7 @@ type StatList struct {
 	Map map[string]*FileStat       	
 }
 type Result struct {
-	diff_file []string  	// get the deleted or newest file 
+	diff_file []string  	// get the deleted or newest file in a dir 
 	diff_content []string 	// get the modified file with content 
 }
 
@@ -68,7 +68,7 @@ func HashContent(filename string ) string {
 }
 
 // get info of the file ( size , name , modication_time , content_modification) using stat 
-// using hash_content functinon
+// using hash_content functinon for the hasContent property
 func GetFileStat(filename string ) *FileStat {
 	hash_content := HashContent(filename) 
 	fs , err :=  os.Stat(filename) 
@@ -88,7 +88,7 @@ func ReadDir(dir_path string ) *StatList {
 	// init localStatList 
 	var localStatList = initStatList() 
 
-	// open the dir for
+	// open the dir for read 
 	fs , err := os.ReadDir(dir_path) 
 	if err != nil {
 		log.Fatal("Error Opening Dir ", err ) 
@@ -127,8 +127,6 @@ func checkDiff(initStat, newStat *StatList )*Result {
 			// otherwise there is no changed occured to the file 
 			if time.Time.Compare(oldData.Modified_at, newData.Modified_at) !=0 {
 				if strings.Compare(oldData.hashContent, newData.hashContent) != 0 {
-					fmt.Printf(" %s  ", oldData.hashContent)
-					fmt.Printf(" %s ", newData.hashContent) 
 					result.diff_content = append(result.diff_content , key) 
 
 				}
