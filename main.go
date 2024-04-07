@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"flag"
 	"path/filepath"
+	"path"
 	"strings"
 	"time"
 )
@@ -19,7 +20,6 @@ const (
 	OS_STAT_ERROR
 	HASH_ERROR
 )
-
 type FileStat struct {
 	Name        string    // name by fs.Name()
 	Size        int64     // size by fs.Size()
@@ -148,15 +148,27 @@ func callCommand(absPath, target string ) {
 	if err := cmd_clear.Run(); err != nil {
 		log.Printf("Error <%s> \n", err ) 
 	}
-
-//	cout , err := exec.Command("go", "-C",absPath, "run",target).CombinedOutput()
-	cout , err := exec.Command( target).CombinedOutput()
+	comp := getCompiler(target) 
+	cmd := exec.Command(comp[0] , comp[1],target)
+	cmd.Dir = absPath
+	cout , err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("Error CombinedOut <%s> \n", err ) 
+		log.Printf("Error Cmd.CombinedOutput <%s>\n", err ) 
 	}
-	fmt.Println(string(cout) )
+	fmt.Println(cmd.Dir)
+	fmt.Println("\t\t_GAZE_OUTPUT_\n\n", string(cout) )
 }
-
+func getCompiler(target string ) []string {
+	switch path.Ext(target) {
+	case ".go":
+		return []string{"go", "run"}
+	case ".rs" :
+		return []string{"cargo", "run"}
+	case ".sh" :
+		return []string{"/bin/sh", "-c"}
+	}
+	return []string{"/bin/sh","-c"}
+}
 
 func parseArgs()(string, string) {
 	var dir string 
@@ -169,7 +181,7 @@ func parseArgs()(string, string) {
 }
 func watchDir(absPath, target string ) {
 	fmt.Printf("checking dir : %s with target : %s \n", absPath, target)
-//	callCommand(absPath, target) 
+	callCommand(absPath, target) 
 	initStat := ReadDir(absPath)
 	fmt.Println("Data was initialized ...")
 	fmt.Println("Starting watchDog  .....")
