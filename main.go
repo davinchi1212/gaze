@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"flag"
 	"path/filepath"
 	"strings"
 	"time"
@@ -86,12 +87,12 @@ func GetFileStat(filename string) *FileStat {
 	}
 
 }
-func ReadDir(dir_path string) *StatList {
+func ReadDir(absPath string) *StatList {
 	// init localStatList
 	var localStatList = initStatList()
 
 	// open the dir for read
-	fs, err := os.ReadDir(dir_path)
+	fs, err := os.ReadDir(absPath)
 	if err != nil {
 		log.Fatal("Error Opening Dir ", err)
 		os.Exit(OPEN_DIR_ERROR)
@@ -100,7 +101,7 @@ func ReadDir(dir_path string) *StatList {
 	// check if file isReuglar
 	// check if file isDir
 	for _, f := range fs {
-		fullpath := filepath.Join(dir_path, f.Name())
+		fullpath := filepath.Join(absPath, f.Name())
 
 		// escape hidden dir as (.git| .config)
 		if string(f.Name()[0]) == "." {
@@ -140,7 +141,7 @@ func checkDiff(initStat, newStat *StatList) *Result {
 }
 
 
-func callCommand() {
+func callCommand(absPath, target string ) {
 	cmd_clear := exec.Command("clear") 
 	cmd_clear.Stdout = os.Stdout 
 	cmd_clear.Stderr = os.Stderr 
@@ -148,23 +149,33 @@ func callCommand() {
 		log.Printf("Error <%s> \n", err ) 
 	}
 
-	absPath, err := filepath.Abs("../testdir")
-	if err != nil {
-		log.Fatal("error reading absolute path", err ) 
-	}
-	cout , err := exec.Command("go", "-C",absPath, "run", "main.go").CombinedOutput()
+//	cout , err := exec.Command("go", "-C",absPath, "run",target).CombinedOutput()
+	cout , err := exec.Command( target).CombinedOutput()
 	if err != nil {
 		log.Printf("Error CombinedOut <%s> \n", err ) 
 	}
 	fmt.Println(string(cout) )
 }
-func watchDir(dir_path string) {
-	initStat := ReadDir(dir_path)
+
+
+func parseArgs()(string, string) {
+	var dir string 
+	var target string 
+	flag.StringVar(&dir, "dir", ".", "the directory required to run the program")
+	flag.StringVar(&target, "tf", "main.go", "terget file to be executed in the dir recommanded")
+	flag.Parse()
+	fmt.Println(dir, target) 
+	return dir, target 
+}
+func watchDir(absPath, target string ) {
+	fmt.Printf("checking dir : %s with target : %s \n", absPath, target)
+//	callCommand(absPath, target) 
+	initStat := ReadDir(absPath)
 	fmt.Println("Data was initialized ...")
 	fmt.Println("Starting watchDog  .....")
 	for {
 		time.Sleep(time.Second * 1)
-		newStat := ReadDir(dir_path)
+		newStat := ReadDir(absPath)
 		if len(initStat.Map) < len(newStat.Map) {
 			result := checkDiff(initStat, newStat)
 			if len(result.diff_file) > 0 {
@@ -179,7 +190,7 @@ func watchDir(dir_path string) {
 					fmt.Printf("\t %s \n", fname)
 				}
 			}
-			callCommand()
+			callCommand(absPath, target)
 		} else if len(initStat.Map) > len(newStat.Map) {
 			result := checkDiff(newStat, initStat)
 			if len(result.diff_file) > 0 {
@@ -194,7 +205,7 @@ func watchDir(dir_path string) {
 					fmt.Printf("\t %s \n", fname)
 				}
 			}
-			callCommand()
+			callCommand(absPath, target)
 		}else {
 			result := checkDiff(newStat, initStat)
 			if len(result.diff_file) > 0  || len(result.diff_content) > 0 {
@@ -211,7 +222,7 @@ func watchDir(dir_path string) {
 						fmt.Printf("\t %s \n", fname)
 					}
 				}
-				callCommand()
+				callCommand(absPath, target)
 			}
 		}
 
@@ -219,7 +230,11 @@ func watchDir(dir_path string) {
 	}
 }
 func main() {
-	path_dir := "../testdir"
-	watchDir(path_dir)
+	dir, target := parseArgs()
+	absPath, err := filepath.Abs(dir) 
+	if err != nil {
+		log.Fatalf("error no dir <%s>, <%s> \n", err )
+	}
+	watchDir(absPath, target)
 	fmt.Println("Hello World")
 }
