@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -137,11 +138,25 @@ func checkDiff(initStat, newStat *StatList) *Result {
 	return result
 
 }
-func getDiff(initStat, newStat *StatList) {
-	if len(initStat.Map) < len(newStat.Map) {
-		log.Printf("one or more files was added")
 
+
+func callCommand() {
+	cmd_clear := exec.Command("clear") 
+	cmd_clear.Stdout = os.Stdout 
+	cmd_clear.Stderr = os.Stderr 
+	if err := cmd_clear.Run(); err != nil {
+		log.Printf("Error <%s> \n", err ) 
 	}
+
+	absPath, err := filepath.Abs("../testdir")
+	if err != nil {
+		log.Fatal("error reading absolute path", err ) 
+	}
+	cout , err := exec.Command("go", "-C",absPath, "run", "main.go").CombinedOutput()
+	if err != nil {
+		log.Printf("Error CombinedOut <%s> \n", err ) 
+	}
+	fmt.Println(string(cout) )
 }
 func watchDir(dir_path string) {
 	initStat := ReadDir(dir_path)
@@ -164,7 +179,8 @@ func watchDir(dir_path string) {
 					fmt.Printf("\t %s \n", fname)
 				}
 			}
-		} else if len(initStat.Map) >= len(newStat.Map) {
+			callCommand()
+		} else if len(initStat.Map) > len(newStat.Map) {
 			result := checkDiff(newStat, initStat)
 			if len(result.diff_file) > 0 {
 				log.Println("File or More was Removed :")
@@ -178,13 +194,32 @@ func watchDir(dir_path string) {
 					fmt.Printf("\t %s \n", fname)
 				}
 			}
+			callCommand()
+		}else {
+			result := checkDiff(newStat, initStat)
+			if len(result.diff_file) > 0  || len(result.diff_content) > 0 {
+			
+				if len(result.diff_file) > 0 {
+					log.Println("File or More was Removed :")
+					for _, fname := range result.diff_file {
+						fmt.Printf("\t %s \n", fname)
+					}
+				}
+				if len(result.diff_content) > 0 {
+					log.Println("file was changed : ")
+					for _, fname := range result.diff_content {
+						fmt.Printf("\t %s \n", fname)
+					}
+				}
+				callCommand()
+			}
 		}
 
 		initStat = newStat
 	}
 }
 func main() {
-	path_dir := "."
+	path_dir := "../testdir"
 	watchDir(path_dir)
 	fmt.Println("Hello World")
 }
