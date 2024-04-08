@@ -25,6 +25,7 @@ const (
 	OPEN_FILE_ERROR
 	OS_STAT_ERROR
 	HASH_ERROR
+	ARGS_ERROR 
 )
 type FileStat struct {
 	Name        string    // name by fs.Name()
@@ -190,11 +191,10 @@ func parseArgs()(string, string) {
 	flag.StringVar(&dir, "dir", ".", "the directory required to run the program")
 	flag.StringVar(&target, "tf", "main.go", "terget file to be executed in the dir recommanded")
 	flag.Parse()
-	fmt.Println(len(os.Args)) 
 	if len(os.Args) < 5 || len(os.Args) > 5  {
 	
 		log.Printf("USAGE <%s> -dir <dirpath> -tf <target_file> \n", os.Args[0])
-		os.Exit(5)
+		os.Exit(ARGS_ERROR)
 	}
 	fmt.Println(dir, target) 
 	return dir, target 
