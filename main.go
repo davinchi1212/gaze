@@ -15,6 +15,10 @@ import (
 )
 
 const (
+	RED = "\033[31m"
+	GREEN="\033[32m"
+	RESET="\033[0m"
+	MAGENTA="\033[033m"
 	OPEN_DIR_ERROR = iota
 	OPEN_FILE_ERROR
 	OS_STAT_ERROR
@@ -153,23 +157,31 @@ func callCommand(absPath, target string ) {
 	cmd.Dir = absPath
 	cout , err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("Error Cmd.CombinedOutput <%s>\n", err ) 
+		log.Printf(MAGENTA + "Error Cmd.CombinedOutput : %s\n" + RESET, err ) 
+		log.Printf(RED + "%s\n" + RESET, cout ) 
+	}else {
+
+		// must handle output
+		// seperate & colirify success output , error output 
+		fmt.Println(cmd.Dir)
+		fmt.Printf("\t\t_GAZE_OUTPUT_\n\n"+ GREEN + "%s" + RESET, string(cout) )
 	}
-	fmt.Println(cmd.Dir)
-	fmt.Println("\t\t_GAZE_OUTPUT_\n\n", string(cout) )
 }
+
+// not universal, but works fine for now 
+// using build is more efficient i guess 
 func getCompiler(target string ) []string {
 	switch path.Ext(target) {
 	case ".go":
 		return []string{"go", "run"}
 	case ".rs" :
 		return []string{"cargo", "run"}
-	case ".sh" :
-		return []string{"/bin/sh", "-c"}
 	}
 	return []string{"/bin/sh","-c"}
 }
 
+
+// parsing path (return not absolute_path) , and target file 
 func parseArgs()(string, string) {
 	var dir string 
 	var target string 
@@ -178,6 +190,20 @@ func parseArgs()(string, string) {
 	flag.Parse()
 	fmt.Println(dir, target) 
 	return dir, target 
+}
+func (result *Result)HandleChanges(message string) {
+	if len(result.diff_file) > 0 {
+    		log.Println(message)
+    		for _, fname := range result.diff_file{
+        		fmt.Printf("\t<%s>\n", fname)
+    		}
+	}
+	if len(result.diff_content) >0 {
+    		log.Println("File or More was changed")
+    		for _, fname := range result.diff_content {
+        		fmt.Printf("\t<%s>\n", fname)
+    		}
+	}
 }
 func watchDir(absPath, target string ) {
 	fmt.Printf("checking dir : %s with target : %s \n", absPath, target)
@@ -190,50 +216,16 @@ func watchDir(absPath, target string ) {
 		newStat := ReadDir(absPath)
 		if len(initStat.Map) < len(newStat.Map) {
 			result := checkDiff(initStat, newStat)
-			if len(result.diff_file) > 0 {
-				log.Println("File or More was Added :")
-				for _, fname := range result.diff_file {
-					fmt.Printf("\t %s \n", fname)
-				}
-			}
-			if len(result.diff_content) > 0 {
-				log.Println("file was changed : ")
-				for _, fname := range result.diff_content {
-					fmt.Printf("\t %s \n", fname)
-				}
-			}
+			result.HandleChanges("File or More was Added :") 
 			callCommand(absPath, target)
 		} else if len(initStat.Map) > len(newStat.Map) {
 			result := checkDiff(newStat, initStat)
-			if len(result.diff_file) > 0 {
-				log.Println("File or More was Removed :")
-				for _, fname := range result.diff_file {
-					fmt.Printf("\t %s \n", fname)
-				}
-			}
-			if len(result.diff_content) > 0 {
-				log.Println("file was changed : ")
-				for _, fname := range result.diff_content {
-					fmt.Printf("\t %s \n", fname)
-				}
-			}
+			result.HandleChanges("Filo or More was Removed")
 			callCommand(absPath, target)
 		}else {
 			result := checkDiff(newStat, initStat)
 			if len(result.diff_file) > 0  || len(result.diff_content) > 0 {
-			
-				if len(result.diff_file) > 0 {
-					log.Println("File or More was Removed :")
-					for _, fname := range result.diff_file {
-						fmt.Printf("\t %s \n", fname)
-					}
-				}
-				if len(result.diff_content) > 0 {
-					log.Println("file was changed : ")
-					for _, fname := range result.diff_content {
-						fmt.Printf("\t %s \n", fname)
-					}
-				}
+				result.HandleChanges("File or More was renamed or mouved or copied")			
 				callCommand(absPath, target)
 			}
 		}
