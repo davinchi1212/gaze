@@ -1,4 +1,4 @@
-# GAZE
+# GAZE **still in progress**
 
 ## Overview
 GAZE is a utility designed to run commands when directories change, files are added or deleted,
