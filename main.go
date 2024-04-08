@@ -15,10 +15,12 @@ import (
 )
 
 const (
-	RED = "\033[31m"
-	GREEN="\033[32m"
-	RESET="\033[0m"
-	MAGENTA="\033[033m"
+	RED = "\033[31m" 	// deleted file 
+	GREEN="\033[32m" 	// file's content was changed 
+	MAGENTA="\033[035m" 	// file that names was changed 
+	YELLOW ="\033[033m" 	// new file
+	RESET="\033[0m"  	// reset color 
+
 	OPEN_DIR_ERROR = iota
 	OPEN_FILE_ERROR
 	OS_STAT_ERROR
@@ -106,7 +108,6 @@ func ReadDir(absPath string) *StatList {
 	// check if file isDir
 	for _, f := range fs {
 		fullpath := filepath.Join(absPath, f.Name())
-
 		// escape hidden dir as (.git| .config)
 		if string(f.Name()[0]) == "." {
 			continue
@@ -144,14 +145,15 @@ func checkDiff(initStat, newStat *StatList) *Result {
 
 }
 
-
-func callCommand(absPath, target string ) {
+func clearScreen() {
 	cmd_clear := exec.Command("clear") 
 	cmd_clear.Stdout = os.Stdout 
 	cmd_clear.Stderr = os.Stderr 
 	if err := cmd_clear.Run(); err != nil {
 		log.Printf("Error <%s> \n", err ) 
 	}
+}
+func callCommand(absPath, target string ) {
 	comp := getCompiler(target) 
 	cmd := exec.Command(comp[0] , comp[1],target)
 	cmd.Dir = absPath
@@ -188,24 +190,36 @@ func parseArgs()(string, string) {
 	flag.StringVar(&dir, "dir", ".", "the directory required to run the program")
 	flag.StringVar(&target, "tf", "main.go", "terget file to be executed in the dir recommanded")
 	flag.Parse()
+	fmt.Println(len(os.Args)) 
+	if len(os.Args) < 5 || len(os.Args) > 5  {
+	
+		log.Printf("USAGE <%s> -dir <dirpath> -tf <target_file> \n", os.Args[0])
+		os.Exit(5)
+	}
 	fmt.Println(dir, target) 
 	return dir, target 
 }
-func (result *Result)HandleChanges(message string) {
+func (result *Result)HandleChanges(message ,color  string) {
+	clearScreen()
 	if len(result.diff_file) > 0 {
     		log.Println(message)
     		for _, fname := range result.diff_file{
-        		fmt.Printf("\t<%s>\n", fname)
+        		fmt.Printf(color  + "\t<%s> "+RESET+"\n", fname)
     		}
 	}
 	if len(result.diff_content) >0 {
     		log.Println("File or More was changed")
     		for _, fname := range result.diff_content {
-        		fmt.Printf("\t<%s>\n", fname)
+        		fmt.Printf(GREEN + "\t<%s>"+RESET+"\n", fname)
     		}
 	}
 }
-func watchDir(absPath, target string ) {
+func watchDir() {
+	dir, target := parseArgs()
+	absPath, err := filepath.Abs(dir) 
+	if err != nil {
+		log.Fatalf("error no dir <%s>, <%s> \n", err )
+	}
 	fmt.Printf("checking dir : %s with target : %s \n", absPath, target)
 	callCommand(absPath, target) 
 	initStat := ReadDir(absPath)
@@ -216,16 +230,16 @@ func watchDir(absPath, target string ) {
 		newStat := ReadDir(absPath)
 		if len(initStat.Map) < len(newStat.Map) {
 			result := checkDiff(initStat, newStat)
-			result.HandleChanges("File or More was Added :") 
+			result.HandleChanges("File or More was Added :",YELLOW) 
 			callCommand(absPath, target)
 		} else if len(initStat.Map) > len(newStat.Map) {
 			result := checkDiff(newStat, initStat)
-			result.HandleChanges("Filo or More was Removed")
+			result.HandleChanges("File or More was Removed", RED)
 			callCommand(absPath, target)
 		}else {
 			result := checkDiff(newStat, initStat)
 			if len(result.diff_file) > 0  || len(result.diff_content) > 0 {
-				result.HandleChanges("File or More was renamed or mouved or copied")			
+				result.HandleChanges("File or More was renamed or mouved or copied", MAGENTA)			
 				callCommand(absPath, target)
 			}
 		}
@@ -234,11 +248,5 @@ func watchDir(absPath, target string ) {
 	}
 }
 func main() {
-	dir, target := parseArgs()
-	absPath, err := filepath.Abs(dir) 
-	if err != nil {
-		log.Fatalf("error no dir <%s>, <%s> \n", err )
-	}
-	watchDir(absPath, target)
-	fmt.Println("Hello World")
+	watchDir()
 }
