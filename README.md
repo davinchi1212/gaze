@@ -16,4 +16,5 @@ As a user of Vim and occasional Emacs, I became enamored with Kakoune (a text ed
 specifically its desertEx theme. However, I found it challenging to replicate the command-running functionality 
 I enjoyed in Vim within Kakoune. Despite extensive searches online, I couldn't find a satisfactory solution. 
 Thus, I embarked on creating GAZE: a tool that enables running commands while editing files.
+Then if found **entr**
 
