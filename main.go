@@ -17,7 +17,7 @@ import (
 const (
 	RED = "\033[31m" 	// deleted file 
 	GREEN="\033[32m" 	// file's content changed 
-	MAGENTA="\033[035m" 	// file'name changed 
+	MAGENTA="\033[035m" 	// file's name changed 
 	YELLOW ="\033[033m" 	// new file
 	RESET="\033[0m"  	// reset color 
 
