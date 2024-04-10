@@ -16,8 +16,8 @@ import (
 
 const (
 	RED = "\033[31m" 	// deleted file 
-	GREEN="\033[32m" 	// file's content was changed 
-	MAGENTA="\033[035m" 	// file that names was changed 
+	GREEN="\033[32m" 	// file's content changed 
+	MAGENTA="\033[035m" 	// file'name changed 
 	YELLOW ="\033[033m" 	// new file
 	RESET="\033[0m"  	// reset color 
 
@@ -39,7 +39,7 @@ type StatList struct {
 }
 type Result struct {
 	diff_file    []string // get the deleted or newest file in a dir
-	diff_content []string // get the modified file with content
+	diff_content []string // get the modified file
 }
 
 // initialise the Statlist to prevent error with nil pointer(map)
@@ -65,7 +65,7 @@ func HashContent(filename string) string {
 	// init hasher with hash.New()
 	hasher := sha256.New()
 
-	// copy contentdata in to the hasher
+	// copy content data into the hasher
 	if _, err := io.Copy(hasher, file); err != nil {
 		log.Fatal("error hashing content of the file ", err)
 		os.Exit(HASH_ERROR)
@@ -105,7 +105,7 @@ func ReadDir(absPath string) *StatList {
 		os.Exit(OPEN_DIR_ERROR)
 	}
 
-	// check if file isReuglar
+	// check if file isReuglar(todo)
 	// check if file isDir
 	for _, f := range fs {
 		fullpath := filepath.Join(absPath, f.Name())
@@ -164,7 +164,7 @@ func callCommand(absPath, target string ) {
 		log.Printf(RED + "%s\n" + RESET, cout ) 
 	}else {
 
-		// must handle output
+		// handle outputs
 		// seperate & colirify success output , error output 
 		fmt.Println(cmd.Dir)
 		fmt.Printf("\t\t_GAZE_OUTPUT_\n\n"+ GREEN + "%s" + RESET, string(cout) )
